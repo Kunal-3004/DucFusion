@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "914888057780",
+    "project_id": "docfusion-30182",
+    "storage_bucket": "docfusion-30182.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:914888057780:android:d3947d31dcb8919af6c8e1",
+        "android_client_info": {
+          "package_name": "com.example.doc_fusion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIFmZ966E4e7CN-Cu2_CDVArQJC24D1Ng"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
