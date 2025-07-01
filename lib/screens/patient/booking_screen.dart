@@ -44,26 +44,23 @@ class _BookingScreenState extends State<BookingScreen> {
     user = _auth.currentUser!;
   }
 
-  // function for selecting appointment date
+
   Future<void> selectDate(BuildContext context) async {
-    showDatePicker(
+    final DateTime? date = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime(2025),
-    ).then(
-      (date) {
-        setState(
-          () {
-            selectedDate = date!;
-            String formattedDate =
-                DateFormat('dd-MM-yyyy').format(selectedDate);
-            _dateController.text = formattedDate;
-            dateUTC = DateFormat('yyyy-MM-dd').format(selectedDate);
-          },
-        );
-      },
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
+
+    if (date != null) {
+      setState(() {
+        selectedDate = date;
+        String formattedDate = DateFormat('dd-MM-yyyy').format(selectedDate);
+        _dateController.text = formattedDate;
+        dateUTC = DateFormat('yyyy-MM-dd').format(selectedDate);
+      });
+    }
   }
 
   // function for selecting appointment time

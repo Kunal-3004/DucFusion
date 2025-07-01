@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:doc_fusion/firestore_data/appointment_history_list.dart';
 import 'package:doc_fusion/globals.dart';
 import 'package:image_picker/image_picker.dart';
+import'package:http/http.dart'as http;
 
 import 'setting.dart';
 
@@ -28,6 +30,7 @@ class _MyProfileState extends State<MyProfile> {
   String? phone;
   String? bio;
   String? specialization;
+
   // default dp
   String image =
       'https://cdn.icon-icons.com/icons2/1378/PNG/512/avatardefault_92824.png';
@@ -88,7 +91,10 @@ class _MyProfileState extends State<MyProfile> {
                             ],
                           ),
                         ),
-                        height: MediaQuery.of(context).size.height / 5,
+                        height: MediaQuery
+                            .of(context)
+                            .size
+                            .height / 5,
                         child: Container(
                           padding: const EdgeInsets.only(top: 10, right: 7),
                           alignment: Alignment.topRight,
@@ -117,7 +123,10 @@ class _MyProfileState extends State<MyProfile> {
                       // user name
                       Container(
                         alignment: Alignment.center,
-                        height: MediaQuery.of(context).size.height / 6,
+                        height: MediaQuery
+                            .of(context)
+                            .size
+                            .height / 6,
                         padding: const EdgeInsets.only(top: 75),
                         child: Text(
                           name ?? 'Name Not Added',
@@ -162,8 +171,14 @@ class _MyProfileState extends State<MyProfile> {
               Container(
                 margin: const EdgeInsets.only(left: 15, right: 15),
                 padding: const EdgeInsets.only(left: 20),
-                height: MediaQuery.of(context).size.height / 7,
-                width: MediaQuery.of(context).size.width,
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height / 7,
+                width: MediaQuery
+                    .of(context)
+                    .size
+                    .width,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.blueGrey[50],
@@ -242,8 +257,14 @@ class _MyProfileState extends State<MyProfile> {
               Container(
                 margin: const EdgeInsets.only(left: 15, right: 15, top: 20),
                 padding: const EdgeInsets.only(left: 20, top: 20),
-                height: MediaQuery.of(context).size.height / 7,
-                width: MediaQuery.of(context).size.width,
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height / 7,
+                width: MediaQuery
+                    .of(context)
+                    .size
+                    .width,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.blueGrey[50],
@@ -299,8 +320,14 @@ class _MyProfileState extends State<MyProfile> {
               Container(
                 margin: const EdgeInsets.only(left: 15, right: 15, top: 20),
                 padding: const EdgeInsets.only(left: 20, top: 20),
-                height: MediaQuery.of(context).size.height / 2,
-                width: MediaQuery.of(context).size.width,
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height / 2,
+                width: MediaQuery
+                    .of(context)
+                    .size
+                    .width,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.blueGrey[50],
@@ -345,7 +372,7 @@ class _MyProfileState extends State<MyProfile> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              const AppointmentHistoryList()));
+                                          const AppointmentHistoryList()));
                                 },
                                 child: const Text('View all'),
                               ),
@@ -382,7 +409,7 @@ class _MyProfileState extends State<MyProfile> {
   // for picking image from device
   Future selectOrTakePhoto(ImageSource imageSource) async {
     XFile? file =
-        await ImagePicker().pickImage(source: imageSource, imageQuality: 12);
+    await ImagePicker().pickImage(source: imageSource, imageQuality: 12);
 
     if (file != null) {
       var im = await file.readAsBytes();
@@ -422,37 +449,93 @@ class _MyProfileState extends State<MyProfile> {
     );
   }
 
-  // upload image
-  Future uploadFile(Uint8List img, String fileName) async {
-    final destination = 'dp/${user.displayName}-$fileName';
+
+
+
+  Future uploadFile(Uint8List imgBytes, String fileName) async {
+    const cloudName = 'dik3t7jpt';
+    const uploadPreset = 'docfusion';
+
+    final url = Uri.parse(
+        "https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+
     try {
-      final ref = storage.ref(destination);
+      final request = http.MultipartRequest('POST', url);
 
-      UploadTask uploadTask = ref.putData(img);
-      TaskSnapshot snapshot = await uploadTask;
+      request.fields['upload_preset'] =
+          uploadPreset;
 
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      print('image url : $downloadUrl');
 
-      setState(() {
-        image = Uri.decodeFull(downloadUrl.toString());
-      });
-      FirebaseFirestore.instance
-          .collection(isDoctor ? 'doctor' : 'patient')
-          .doc(user.uid)
-          .set({
-        'profilePhoto': downloadUrl,
-      }, SetOptions(merge: true));
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        imgBytes,
+        filename: fileName,
+      ));
 
-      // main user data
-      FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'profilePhoto': downloadUrl,
-      }, SetOptions(merge: true));
+      final response = await request.send();
 
-      print("uploaded !!!");
+      if (response.statusCode == 200) {
+        final res = await http.Response.fromStream(response);
+        final data = json.decode(res.body);
+        final imageUrl = data['secure_url'];
+
+        print("Uploaded to Cloudinary: $imageUrl");
+
+        setState(() {
+          image = imageUrl;
+        });
+
+        // Save to Firestore
+        await FirebaseFirestore.instance
+            .collection(isDoctor ? 'doctor' : 'patient')
+            .doc(user.uid)
+            .set({'profilePhoto': imageUrl}, SetOptions(merge: true));
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({'profilePhoto': imageUrl}, SetOptions(merge: true));
+      } else {
+        print("Failed to upload to Cloudinary: ${response.statusCode}");
+      }
     } catch (e) {
-      print(e.toString());
-      print('error occured');
+      print("Cloudinary Upload Error: $e");
     }
   }
 }
+
+
+  // upload image
+//   Future uploadFile(Uint8List img, String fileName) async {
+//     final destination = 'dp/${user.displayName}-$fileName';
+//     try {
+//       final ref = storage.ref(destination);
+//
+//       UploadTask uploadTask = ref.putData(img);
+//       TaskSnapshot snapshot = await uploadTask;
+//
+//       String downloadUrl = await snapshot.ref.getDownloadURL();
+//       print('image url : $downloadUrl');
+//
+//       setState(() {
+//         image = Uri.decodeFull(downloadUrl.toString());
+//       });
+//       FirebaseFirestore.instance
+//           .collection(isDoctor ? 'doctor' : 'patient')
+//           .doc(user.uid)
+//           .set({
+//         'profilePhoto': downloadUrl,
+//       }, SetOptions(merge: true));
+//
+//       // main user data
+//       FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+//         'profilePhoto': downloadUrl,
+//       }, SetOptions(merge: true));
+//
+//       print("uploaded !!!");
+//     } catch (e) {
+//       print(e.toString());
+//       print('error occured');
+//     }
+//   }
+// }
