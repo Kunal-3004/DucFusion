@@ -8,8 +8,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application
-        android:label="doc_fusion"
-        android:name="${applicationName}"
+        android:label="DocFusion"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
